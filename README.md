@@ -13,4 +13,4 @@
 
 ## Work list
 ### Kaggle
-- [Data preprocessing for predict_future_sales](./Kaggle/predict_future_sales)
+- [Data preprocessing for predict_future_sales](https://github.com/blissray/n-day-of-code/tree/master/kaggle/predict_future_sales)
