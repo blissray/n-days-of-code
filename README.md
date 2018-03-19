@@ -13,6 +13,11 @@
 - 개인적으로 필요한 간단한 스크립트
 - 웹, 데이터 엔지니어링, DB 관련 코드들
 
+## History
+- 19/3/2018 - 수업 예시용 Kaggle `Predict Future Sales` 전처리 계획 수립 및 날짜데이터 전처리 시행  (see @df017b6)
+
+
+
 ## Work list
 ### Kaggle
 - [Data preprocessing for predict_future_sales](https://github.com/blissray/n-day-of-code/tree/master/kaggle/predict_future_sales)
