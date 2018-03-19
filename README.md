@@ -14,7 +14,7 @@
 - 웹, 데이터 엔지니어링, DB 관련 코드들
 
 ## History
-- 19/3/2018 - 수업 예시용 Kaggle `Predict Future Sales` 전처리 계획 수립 및 날짜데이터 전처리 시행  (see # df017b6)
+- 19/3/2018 - 수업 예시용 Kaggle `Predict Future Sales` 전처리 계획 수립 및 날짜데이터 전처리 시행  (see #df017b6)
 
 
 
