@@ -15,8 +15,7 @@
 
 ## History
 - 19/3/2018 - 수업 예시용 Kaggle `Predict Future Sales` 전처리 계획 수립 및 날짜데이터 전처리 시행  (see aa33a74)
-
-
+- 28/3/2018 - 수업 예시용 Kaggle `Predict Future Sales` Lasso, LinearRegression Simple 모델 생성  (see 65c1850)
 
 ## Work list
 ### Kaggle
