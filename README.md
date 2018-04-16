@@ -14,6 +14,7 @@
 - 웹, 데이터 엔지니어링, DB 관련 코드들
 
 ## History
+- 16/4/2018 - Tensorflow dataset handler example 개발 (see 09e47b1)
 - 31/3/2018 - 인프런 머신러닝과정 예시용 Kaggle `Tatanic` 전처리 진행  (see a1de24c)
 - 28/3/2018 - 수업 예시용 Kaggle `Predict Future Sales` Lasso, LinearRegression Simple 모델 생성  (see 65c1850)
 - 19/3/2018 - 수업 예시용 Kaggle `Predict Future Sales` 전처리 계획 수립 및 날짜데이터 전처리 시행  (see aa33a74)
@@ -21,3 +22,5 @@
 ## Work list
 ### Kaggle
 - [Data preprocessing for predict_future_sales](https://github.com/blissray/n-day-of-code/tree/master/kaggle/predict_future_sales)
+
+### Tensorflow code example
