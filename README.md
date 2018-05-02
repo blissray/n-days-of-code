@@ -14,6 +14,7 @@
 - 웹, 데이터 엔지니어링, DB 관련 코드들
 
 ## History
+- 2/5/2018 - Tensorflow tfrecord example - (see b2fce8)
 - 17/4/2018 - Tensorflow dataset handler example 개발 - MNIST 전처리등 (see 7874689)
 - 16/4/2018 - Tensorflow dataset handler example 개발 (see 09e47b1)
 - 31/3/2018 - 인프런 머신러닝과정 예시용 Kaggle `Tatanic` 전처리 진행  (see a1de24c)
