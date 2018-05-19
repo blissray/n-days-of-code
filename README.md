@@ -14,6 +14,7 @@
 - 웹, 데이터 엔지니어링, DB 관련 코드들
 
 ## History
+- 20/5/2018 - codes for dog breed identiation problem - (see 77f8e6a)
 - 2/5/2018 - Tensorflow tfrecord example - (see b2fce8)
 - 17/4/2018 - Tensorflow dataset handler example 개발 - MNIST 전처리등 (see 7874689)
 - 16/4/2018 - Tensorflow dataset handler example 개발 (see 09e47b1)
