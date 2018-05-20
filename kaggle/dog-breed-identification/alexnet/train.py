@@ -1,142 +1,109 @@
-import tensorflow as tf
-from model import AlexNet
-import numpy as np
+"""Train the model"""
+
+import argparse
+import logging
 import os
+import random
 
-def loss_function(hypothesis, Y):
-    with tf.variable_scope("loss", reuse=tf.AUTO_REUSE):
-        loss = tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits_v2(
-                logits=hypothesis, labels=Y), name="softmax_cross_entropy")
-    return loss
+import tensorflow as tf
 
+from model.input_fn import input_fn
+from model.utils import Params
+from model.utils import set_logger
+from model.utils import save_dict_to_json
+from model.model_fn import model_fn
+from model.training import train_and_evaluate
 
-def training(loss, learning_rate_init_value):
-    optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate_init_value, momentum=0.9)
-    train_step = optimizer.minimize(loss)
-    return train_step
-
-
-def decode(serialized_example):
-    features = tf.parse_single_example(
-        serialized_example,
-        # Defaults are not specified since both keys are required.
-        features={
-          'images': tf.FixedLenFeature([], tf.string),
-          'label': tf.FixedLenFeature([], tf.string),
-      })
+from sklearn.preprocessing import LabelEncoder
 
 
-    image = tf.decode_raw(features['images'], tf.uint8)
-    # image = tf.reshape(image, [-1, 128,128,3])
-    # image = tf.image.rgb_to_grayscale(image)
-
-    image = tf.cast(image, tf.float32)
-
-    label = tf.decode_raw(features['label'], tf.uint8)
-    label = tf.cast(label, tf.float32)
-
-    return image, label
+parser = argparse.ArgumentParser()
+parser.add_argument('--model_dir', default='experiments/base_model',
+                    help="Experiment directory containing params.json")
+parser.add_argument('--data_dir', default='data/256x256_Images',
+                    help="Directory containing the dataset")
+parser.add_argument('--restore_from', default=None,
+                    help="Optional, directory or file containing weights to reload before training")
 
 
-def train(config_dict):
-    n_out = 120
-    n_in = 224*224*3
+if __name__ == '__main__':
+    # Set the random seed for the whole graph for reproductible experiments
+    tf.set_random_seed(230)
 
-    X = tf.placeholder(tf.float32, [None, n_in])
-    Y = tf.placeholder(tf.float32, [None, n_out])
-    dropout_prob = tf.placeholder(tf.float32, shape=(), name="init")
+    # Load the parameters from json file
+    args = parser.parse_args()
+    json_path = os.path.join(args.model_dir, 'params.json')
+    assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
+    params = Params(json_path)
 
+    # Check that we are not overwriting some previous experiment
+    # Comment these lines if you are developing your model and don't care about overwritting
+    model_dir_has_best_weights = os.path.isdir(os.path.join(args.model_dir, "best_weights"))
+    overwritting = model_dir_has_best_weights and args.restore_from is None
+    assert not overwritting, "Weights found in model_dir, aborting to avoid overwrite"
 
-    mlp_model = AlexNet(X, n_in=n_in, n_out=n_out, dropout_prob=dropout_prob)
-    loss = loss_function(mlp_model.hypothesis, Y)
-    train_step = training(loss,
-        learning_rate_init_value=config_dict["learning_rate"])
+    # Set the logger
+    set_logger(os.path.join(args.model_dir, 'train.log'))
 
-    import glob
-    filenames = glob.glob("./tfrecords/cropping/train/*.tfrecords")
-    train_dataset = tf.data.TFRecordDataset(filenames)
-    train_dataset = train_dataset.map(decode)
-    train_dataset = train_dataset.shuffle(buffer_size=10000)
-    train_dataset = train_dataset.batch(config_dict["batch_size"])
-    iterator = tf.data.Iterator.from_structure(
-                            train_dataset.output_types,
-                            train_dataset.output_shapes)
-    next_element = iterator.get_next()
-    train_init_op = iterator.make_initializer(train_dataset)
+    # Create the input data pipeline
+    logging.info("Creating the datasets...")
+    data_dir = args.data_dir
 
-    filenames = glob.glob("./tfrecords/cropping/test/*.tfrecords")
-    test_dataset = tf.data.TFRecordDataset(filenames)
-    test_dataset = test_dataset.map(decode)
-    test_dataset = test_dataset.batch(512)
-    test_iterator = tf.data.Iterator.from_structure(
-                            test_dataset.output_types,
-                            test_dataset.output_shapes)
-    test_next_element = test_iterator.get_next()
-    test_init_op = test_iterator.make_initializer(test_dataset)
+    label_names = os.listdir(os.path.join(data_dir, "train"))
+    logging.info("Number of breed labels {0}".format(len(label_names)))
 
-    sess = tf.Session()
-    sess.run(tf.global_variables_initializer())
-
-    for epoch in range(config_dict["training_epochs"]):
-            # initialize the iterator on the training data
-            sess.run(train_init_op)
-
-            # get each element of the training dataset until the end is reached
-            cost = 0
-            total_batch = 0
+    lbl_encoder = LabelEncoder()
+    lbl_encoder.fit(label_names)
 
 
-            while True:
-                try:
-                    batch = sess.run(next_element)
-                    batch_xs = batch[0]
-                    # print(batch_xs.shape)
-                    batch_ys = batch[1]
+    train_filenames = []
+    eval_filenames = []
 
-                    feed_dict = {X: batch_xs, Y: batch_ys, dropout_prob: 0.5}
-                    c, _ = sess.run([loss, train_step], feed_dict=feed_dict)
-                    cost += c
-                    total_batch += 1
-                except tf.errors.OutOfRangeError:
-                    print("End of training dataset.")
-                    break
+    train_labels = []
+    eval_labels = []
 
-            avg_cost = cost / total_batch
-            print('Epoch:', '%04d' % (epoch + 1), 'cost =', '{:.9f}'.format(
-                    avg_cost))
+    for label_name in label_names:
+        train_data_dir = os.path.join(data_dir, "train", label_name)
+        dev_data_dir = os.path.join(data_dir, "dev", label_name)
 
-            sess.run(test_init_op)
-            total_correct = 0
-            total_data = 0
-            while True:
-                try:
-                    batch = sess.run(test_next_element)
-                    batch_x = batch[0]
-                    batch_y = batch[1]
+        # Get the filenames from the train and dev sets
+        train_temp_filenames = [os.path.join(train_data_dir, f)
+                                for f in os.listdir(train_data_dir)
+                                if f.endswith('.jpg')]
+        train_filenames.extend(train_temp_filenames)
 
-                    correct_prediction = tf.equal(
-                            tf.argmax(mlp_model.hypothesis, axis=1),
-                            tf.argmax(Y, axis=1))
-                    # correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
-                    result = sess.run(correct_prediction, feed_dict={
-                          X: batch_x, Y: batch_y, dropout_prob: 1.0})
-                    total_correct += np.sum(result)
-                    total_data += len(result)
+        eval_temp_filenames = [os.path.join(dev_data_dir, f)
+                               for f in os.listdir(dev_data_dir)
+                               if f.endswith('.jpg')]
+        eval_filenames.extend(eval_temp_filenames)
 
-                    print('result:', sess.run(tf.argmax(mlp_model.hypothesis, axis=1)[:50], feed_dict={
-                          X: batch_x, Y: batch_y, dropout_prob: 1.0}))
-                except tf.errors.OutOfRangeError:
-                    print("End of test dataset.")
-                    break
-            print("Accuracy : " , (total_correct/total_data))
+        # Labels will be between 0 and 5 included (6 classes in total)
+        train_labels.extend(
+                lbl_encoder.transform([label_name] * len(train_temp_filenames))
+                )
+        eval_labels.extend(
+                lbl_encoder.transform([label_name] * len(eval_temp_filenames))
+                )
 
 
-if __name__ == "__main__":
-    config_dict = {
-        "learning_rate": 0.0001,
-        "training_epochs": 5000,
-        "batch_size": 64
-        }
+    # Specify the sizes of the dataset we train on and evaluate on
+    params.train_size = len(train_filenames)
+    params.eval_size = len(eval_filenames)
 
-    train(config_dict)
+    logging.info("Number of train datasets: {0}".format(params.train_size))
+    logging.info("Number of eval datasets: {0}".format(params.eval_size))
+
+    # Create the two iterators over the two datasets
+    logging.info("Creating dataset...")
+    train_inputs = input_fn(True, train_filenames, train_labels, params)
+    eval_inputs = input_fn(False, eval_filenames, eval_labels, params)
+
+    # Define the model
+    logging.info("Creating the model...")
+    train_model_spec = model_fn('train', train_inputs, params)
+    eval_model_spec = model_fn('eval', eval_inputs, params, reuse=True)
+
+    # Train the model
+    logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
+    train_and_evaluate(
+        train_model_spec, eval_model_spec, args.model_dir, params, args.restore_from)
