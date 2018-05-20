@@ -1,6 +1,8 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+data
+events.out.tfevents.*
 
 # C extensions
 *.so
