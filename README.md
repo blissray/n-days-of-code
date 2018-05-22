@@ -14,6 +14,7 @@
 - 웹, 데이터 엔지니어링, DB 관련 코드들
 
 ## History
+- 22/5/2018 - Image augumentation example code - (see b7d91e6)
 - 20/5/2018 - Alaexnet codes for dog breed identiation problem - (see 22e6dd3)
 - 20/5/2018 - codes for dog breed identiation problem - (see 77f8e6a)
 - 2/5/2018 - Tensorflow tfrecord example - (see b2fce8)
